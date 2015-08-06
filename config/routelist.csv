@@ -1,0 +1,6 @@
+num drivers, origin node,node2,node3, ... ,destination node
+0,S,M,N,D
+10,S,M,P,D
+10,S,O,P,D
+4,S,O,P,M,N,D
+2,S,M,P,D,N
