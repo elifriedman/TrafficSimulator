@@ -16,10 +16,13 @@ public class ConfigReader {
             s.useDelimiter("[,\\n]");
             s.nextLine();
             while(s.hasNext()) {
-                String roadname = s.next() + s.next();
+                String c1 = s.next(); String c2 = s.next();
+                String roadname = c1 + c2;
                 float freeflowtraveltime = s.nextFloat();
                 int capacity = s.nextInt();
-                ht.put(roadname, new Road(roadname,capacity,freeflowtraveltime));
+                Road road = new Road(roadname,capacity,freeflowtraveltime);
+                ht.put(roadname, road);
+                ht.put(c2 + c1, road); // make sure it's symmetric
             }
             s.close();
         } catch (FileNotFoundException fe) {
@@ -40,32 +43,45 @@ public class ConfigReader {
             fileReader.readLine(); // skip first line
 
             String line = "";
+            int id = 0;
             while ((line = fileReader.readLine()) != null) {
+                if(line.charAt(0)=='#') continue; // python comments!
                 //Get all tokens available in line
                 String[] tokens = line.split(DELIMITER);
                 int num_agents = Integer.parseInt(tokens[0]);
-                String[] route = new String[tokens.length];
+                String randcheck = tokens[1];
+                String[] route = new String[tokens.length-1];
                 route[0] = "start";
                 route[route.length - 1] = "end";
-                for (int i = 1; i < tokens.length - 1; i++) {
-                    route[i] = tokens[i] + tokens[i + 1];
+                for (int i = 2; i < tokens.length - 1; i++) {
+                    route[i-1] = tokens[i] + tokens[i + 1];
+                    if(!agentHolder.containsKey(route[i-1])) {
+                        System.err.println("The road network does not contain "
+                                + "a road from " + tokens[i] + 
+                                " to " + tokens[i+1] + ".");
+                        System.exit(-1);
+                    }
                 }
                 for(int i=0;i<num_agents;i++) {
-                    double start_time = rng.nextDouble()*timewindow;
-                    Agent a = new Agent(start_time,route);
+                    double start_time;
+                    if(randcheck.equals("r")) {
+                        start_time = rng.nextDouble()*timewindow;
+                    } else {
+                        start_time = Double.parseDouble(randcheck);
+                    }
+                    Agent a = new Agent(id,start_time,route);
                     agentHolder.get("start").addAgent(a);
+                    id++;
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
             System.err.println("ConfigReader.initializeRoute: Check that file '" + filename + "' is in the correct place and has the correct format");
             System.exit(-1);
         }
-        ArrayList<Agent> agents = agentHolder.get("start").agentList;
-        IndexMinPQ<Agent> eventManager = new IndexMinPQ<>(agents.size());
-        for(int i=0;i<agents.size();i++) {
-            agents.get(i).ID = i;
-            eventManager.insert(i,agents.get(i));
+        ArrayList<Agent> agentlist = agentHolder.get("start").agentList;
+        IndexMinPQ<Agent> eventManager = new IndexMinPQ<>(agentlist.size());
+        for (Agent agent : agentlist) {
+            agent.setManager(eventManager);
         }
         return eventManager;
     }

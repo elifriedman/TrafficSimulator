@@ -23,7 +23,12 @@ public class Road {
     }
 
     public double cost() {
+        if("start".equals(name) || "end".equals(name)) return 0;
         return Road.cost(this.fftt,this.capacity,this.agentList.size());
+    }
+    
+    public int numCars() {
+        return this.agentList.size();
     }
 
     public static double alpha = .15;
