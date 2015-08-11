@@ -1,5 +1,6 @@
 package edu.cooper;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -12,24 +13,34 @@ public class Agent implements Comparable<Agent> {
     private double velocity;
     private Double distRemaining;
     private Double t;
-    private final Road[] route;
+    private Road[] route;
     private int curPos;
     final int ID;
     private IndexMinPQ manager;
 
 
-    public Agent(int ID, double t,Road[] route)  {
+    public Agent(int ID, double t)  {
         this.journeyStart = t;
         this.current_time = t;
         this.distRemaining = 0.0;
         this.velocity = 0;
         this.t = t;
-        this.route = route;
         curPos = 1;
         this.ID = ID;
         this.manager = null;
+        this.route = null;
     }
 
+    /**
+     * Choose from one of the routes in routelist
+     * @param routelist a list of possible routes from which to choose
+     */
+    public void chooseRoute(ArrayList<Road[]> routelist) {
+        // TODO create a choice function
+    }
+    public void chooseRoute(Road[] route) {
+        this.route = route;
+    }
     public void setManager(IndexMinPQ manager) {
         if(this.manager==null) {
             this.manager = manager;
@@ -45,8 +56,19 @@ public class Agent implements Comparable<Agent> {
         return t;
     }
     public double getTotalTime() { return this.t - this.journeyStart; }
-    public double getRoadStartTime() { return this.current_time; }
+    public double distanceLeft() { return this.distRemaining; }
 
+    public void advance(double current_time) {
+        if(curPos < this.route.length) curPos++;
+        if( !finished() ) {
+            this.current_time = current_time;
+            this.distRemaining = this.currentRoad().roadlength;
+            this.velocity = this.currentRoad().avg_vel();
+            this.t = this.getTime();
+            if(manager != null && manager.contains(ID))
+                manager.changeKey(ID, this);
+        }
+    }
     public void update(double current_time) {
         if(!finished()) {
             double dist_travelled = (current_time - this.current_time)*this.velocity;
@@ -60,22 +82,21 @@ public class Agent implements Comparable<Agent> {
     }
     
     public Road nextRoad() {
+        if(this.route==null) {
+            System.err.println("Please call agent.chooseRoute in order to initialize this agent with a route.");
+            System.exit(-1);
+        }
         if(finished()) return this.route[this.curPos-1];
         return this.route[this.curPos];
     }
-    public Road currentRoad() { return this.route[this.curPos-1]; }
-    
-    public void advance(double current_time) {
-        if(curPos < this.route.length) curPos++;
-        if( !finished() ) {
-            this.current_time = current_time;
-            this.distRemaining = this.currentRoad().roadlength;
-            this.velocity = this.currentRoad().avg_vel();
-            this.t = this.getTime();
-            if(manager != null && manager.contains(ID))
-                manager.changeKey(ID, this);
+    public Road currentRoad() {
+        if (this.route==null) {
+            System.err.println("Please call agent.chooseRoute in order to initialize this agent with a route.");
+            System.exit(-1);
         }
-    }
+        return this.route[this.curPos-1]; }
+    
+
     public boolean finished() { 
         boolean finished = curPos >= route.length; // i.e. currentRoad() == "end"
         if(finished && manager.contains(ID)) {
@@ -95,4 +116,5 @@ public class Agent implements Comparable<Agent> {
         if(curPos+1<route.length) ret += " --> " + nextRoad().toString();
         return ret;
     }
+
 }

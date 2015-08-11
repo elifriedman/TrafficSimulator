@@ -34,7 +34,41 @@ public class ConfigReader {
         return ht;
     }
 
-    public static IndexMinPQ<Agent> initializeRoutes(String filename, HashMap<String,Road> agentHolder, double timewindow) {
+    public static ArrayList<Road[]> initializeRouteList(String filename, HashMap<String,Road> agentHolder) {
+        final String DELIMITER = ",";
+        ArrayList<Road[]> routelist = new ArrayList<>();
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(filename))){
+            fileReader.readLine(); // skip first line
+
+            String line = "";
+            while ((line = fileReader.readLine()) != null) {
+                if(line.charAt(0)=='#') continue; // python comments!
+                //Get all tokens available in line
+                String[] tokens = line.split(DELIMITER);
+                Road[] route = new Road[tokens.length+1];
+                route[0] = agentHolder.get("start");
+                route[route.length - 1] = agentHolder.get("end");
+                for (int i = 0; i < tokens.length - 1; i++) {
+                    String routeName = tokens[i] + tokens[i+1];
+                    if(agentHolder.containsKey(routeName)) {
+                        route[i+1] = agentHolder.get(routeName);
+                    } else {
+                        System.err.println("The road network does not contain "
+                                + "a road from " + tokens[i] +
+                                " to " + tokens[i+1] + ".");
+                        System.exit(-1);
+                    }
+                }
+                routelist.add(route);
+            }
+        } catch (Exception e) {
+            System.err.println("ConfigReader.initializeRoute: Check that file '" + filename + "' is in the correct place and has the correct format");
+            System.exit(-1);
+        }
+        return routelist;
+    }
+
+    public static IndexMinPQ<Agent> initializeAgents(String filename, HashMap<String,Road> agentHolder, double timewindow) {
         Random rng = new Random();
 
         //Delimiter used in CSV file
@@ -50,20 +84,6 @@ public class ConfigReader {
                 String[] tokens = line.split(DELIMITER);
                 int num_agents = Integer.parseInt(tokens[0]);
                 String randcheck = tokens[1];
-                Road[] route = new Road[tokens.length-1];
-                route[0] = agentHolder.get("start");
-                route[route.length - 1] = agentHolder.get("end");
-                for (int i = 2; i < tokens.length - 1; i++) {
-                    String routeName = tokens[i] + tokens[i + 1];
-                    if(agentHolder.containsKey(routeName)) {
-                        route[i-1] = agentHolder.get(routeName);
-                    } else {
-                        System.err.println("The road network does not contain "
-                                + "a road from " + tokens[i] + 
-                                " to " + tokens[i+1] + ".");
-                        System.exit(-1);
-                    }
-                }
                 for(int i=0;i<num_agents;i++) {
                     double start_time;
                     if(randcheck.equals("r")) {
@@ -71,7 +91,7 @@ public class ConfigReader {
                     } else {
                         start_time = Double.parseDouble(randcheck);
                     }
-                    Agent a = new Agent(id,start_time,route);
+                    Agent a = new Agent(id,start_time);
                     agentHolder.get("start").addAgent(a);
                     id++;
                 }

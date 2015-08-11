@@ -1,19 +1,5 @@
-num drivers, start time ('r' for random), origin node,node2,node3, ... ,destination node
-1,0,S,M,N,D
-1,1,S,M,N,D
-1,2,S,M,N,D
-1,1,S,M,P,D
-1,2,S,M,P,D
-1,3,S,M,P,D
-1,5,S,O,P,D
-1,5,S,O,P,D
-1,6,S,O,P,D
-1,7,S,O,P,D
-1,8,S,O,P,D
-1,9,S,O,P,M,N,D
-1,10,S,O,P,M,N,D
-1,11,S,O,P,M,N,D
-1,12,S,O,P,M,N,D
-1,13,S,O,P,M,N,D
-1,14,S,M,P,D,N
-1,16,S,M,P,D,N
+origin node,node2,node3, ... ,destination node
+S,M,N,D
+S,O,P,D
+S,O,P,M,N,D
+S,M,P,D

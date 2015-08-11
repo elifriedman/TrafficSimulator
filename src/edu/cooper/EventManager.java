@@ -1,7 +1,12 @@
 package edu.cooper;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 public class EventManager {
 
@@ -9,18 +14,59 @@ public class EventManager {
     HashMap<String, Road> roadmap;
     IndexMinPQ<Agent> eventManager;
     ArrayList<Agent> agentlist;
+    ArrayList<Road[]> routelist;
     boolean started;
     boolean finished;
 
     public EventManager() {
         roadmap = ConfigReader.initializeRoadNetwork("config/roadnet.csv");
-        eventManager = ConfigReader.initializeRoutes("config/routelist.csv", roadmap, 30);
+        routelist = ConfigReader.initializeRouteList("config/routelist.csv",roadmap);
+        eventManager = ConfigReader.initializeAgents("config/agentlist.csv", roadmap, 30);
         agentlist = (ArrayList<Agent>) roadmap.get("start").agentList.clone();
         time = 0;
         started = false;
         finished = false;
     }
 
+    public int[] initializeAgents(int[] routechoices) {
+        int count=0;
+        for(int i=0; i<routechoices.length; i++) {
+            for(int j=0; j<routechoices[i]; j++) {
+                agentlist.get(count+j).chooseRoute(routelist.get(i));
+            }
+            count += routechoices[i];
+        }
+        return routechoices;
+    }
+    public int[] initializeAgents() {
+        int[] routechoices = new int[routelist.size()];
+        Random rng = new Random();
+        int total = agentlist.size();
+        for(int i=0; i<routechoices.length-1; i++) {
+            int r = rng.nextInt(total+1);
+            routechoices[i] = r;
+            total = total - r;
+        }
+        routechoices[routechoices.length-1] = total;
+
+        int count=0;
+        for(int i=0; i<routechoices.length; i++) {
+            for(int j=0; j<routechoices[i]; j++) {
+                agentlist.get(count+j).chooseRoute(routelist.get(i));
+            }
+            count += routechoices[i];
+        }
+        return routechoices;
+    }
+    public double averageTime() {
+        int n = 0;
+        double total = 0;
+        for (Agent a : this.agentlist) {
+            total += a.getTotalTime();
+            n += 1;
+        }
+        return total / n;
+    }
     public Agent step() {
         started = true;
         if (eventManager.isEmpty()) {
@@ -54,17 +100,42 @@ public class EventManager {
     }
 
     public static void main(String[] args) {
-//        EventManager em = new EventManager();
-//        while(!em.finished) {
-//            em.step();
-//        }
-        fn1();
+        String filename = "learning_data";
+        int N = 1000;
+        try (BufferedWriter file = new BufferedWriter(new FileWriter(filename))) {
+            for(int j=0; j<N; j++) {
+                if(j%100==0) System.out.println(j);
+                EventManager em = new EventManager();
+                int[] choices = em.initializeAgents();
+                while (!em.finished) em.step();
+                String write = "";
+                for (int i = 0; i < choices.length; i++) {
+                    write += choices[i] + ",";
+                }
+                write += String.valueOf(em.averageTime()) + "\n";
+                file.write(write);
+            }
+        } catch (Exception e) {}
     }
 
+    public static void fn2() {
+        EventManager em = new EventManager();
+        em.initializeAgents();
+        int i=0;
+        while(!em.finished) {
+            Agent a = em.step();
+            if(em.agentlist.get(0).equals(a)) {
+                System.out.println();
+                System.out.print("("+a.currentRoad()+") ");
+            }
+            System.out.print(em.agentlist.get(0).distanceLeft() + " ");
+        }
+    }
     public static void fn1() {
         EventManager em = new EventManager();
+        em.initializeAgents();
         int i = 0;
-        String[] roads = {"SO", "OP", "PM", "MN", "ND"};
+        String[] roads = {"SO", "SM","OP", "PM", "MN","PD", "ND"};
         for (; !em.finished; i++) {
             em.step();
             double now = ((double) Math.round(em.time * 1000)) / 1000;
