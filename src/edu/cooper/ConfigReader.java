@@ -50,12 +50,14 @@ public class ConfigReader {
                 String[] tokens = line.split(DELIMITER);
                 int num_agents = Integer.parseInt(tokens[0]);
                 String randcheck = tokens[1];
-                String[] route = new String[tokens.length-1];
-                route[0] = "start";
-                route[route.length - 1] = "end";
+                Road[] route = new Road[tokens.length-1];
+                route[0] = agentHolder.get("start");
+                route[route.length - 1] = agentHolder.get("end");
                 for (int i = 2; i < tokens.length - 1; i++) {
-                    route[i-1] = tokens[i] + tokens[i + 1];
-                    if(!agentHolder.containsKey(route[i-1])) {
+                    String routeName = tokens[i] + tokens[i + 1];
+                    if(agentHolder.containsKey(routeName)) {
+                        route[i-1] = agentHolder.get(routeName);
+                    } else {
                         System.err.println("The road network does not contain "
                                 + "a road from " + tokens[i] + 
                                 " to " + tokens[i+1] + ".");

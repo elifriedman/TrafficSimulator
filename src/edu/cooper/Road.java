@@ -9,12 +9,12 @@ public class Road {
     ArrayList<Agent> agentList;
     String name;
     int capacity;
-    float fftt; // free flow travel time
+    double roadlength; // road length
 
-    public Road(String name,int capacity, float freeflowtraveltime) {
+    public Road(String name,int capacity, float roadlength) {
         this.name = name;
         this.capacity = capacity;
-        this.fftt = freeflowtraveltime;
+        this.roadlength = roadlength;
         agentList = new ArrayList<>();
     }
 
@@ -24,11 +24,30 @@ public class Road {
 
     public double cost() {
         if("start".equals(name) || "end".equals(name)) return 0;
-        return Road.cost(this.fftt,this.capacity,this.agentList.size());
+        return Road.cost(this.roadlength, this.capacity, this.agentList.size());
+    }
+
+    public double avg_vel() {
+        if("start".equals(name) || "end".equals(name)) return 0;
+        double traveltime = Road.cost(this.roadlength, this.capacity, this.agentList.size());
+        return this.roadlength/traveltime;
     }
     
     public int numCars() {
         return this.agentList.size();
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof Road)) return false;
+        Road oRoad = (Road) other;
+        if (this.name.equals(oRoad.name) && this.capacity==oRoad.capacity && this.roadlength==oRoad.roadlength) return true;
+        return false;
     }
 
     public static double alpha = .15;

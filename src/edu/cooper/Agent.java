@@ -8,17 +8,21 @@ import java.util.Objects;
  */
 public class Agent implements Comparable<Agent> {
     private double journeyStart;
-    private Double roadStartT;
+    private double current_time;
+    private double velocity;
+    private Double distRemaining;
     private Double t;
-    private final String[] route;
+    private final Road[] route;
     private int curPos;
     final int ID;
     private IndexMinPQ manager;
 
 
-    public Agent(int ID, double t,String[] route)  {
+    public Agent(int ID, double t,Road[] route)  {
         this.journeyStart = t;
-        this.roadStartT = t;
+        this.current_time = t;
+        this.distRemaining = 0.0;
+        this.velocity = 0;
         this.t = t;
         this.route = route;
         curPos = 1;
@@ -32,32 +36,46 @@ public class Agent implements Comparable<Agent> {
             this.manager.insert(ID, this);
         }
     }
-    public double getTime() { return this.t; }
+
+    public double getTime() {
+        double t = this.t;
+        if (this.velocity > 0) {
+            t = this.distRemaining / this.velocity + this.current_time;
+        }
+        return t;
+    }
     public double getTotalTime() { return this.t - this.journeyStart; }
-    public double getRoadStartTime() { return this.roadStartT; }
-    public void newEvent(double road_cost) { 
-        if(road_cost >= 0) {
-            this.roadStartT = this.t;
-            this.t += road_cost;
-            if(manager != null && manager.contains(ID)) 
+    public double getRoadStartTime() { return this.current_time; }
+
+    public void update(double current_time) {
+        if(!finished()) {
+            double dist_travelled = (current_time - this.current_time)*this.velocity;
+            this.distRemaining = this.distRemaining - dist_travelled;
+            this.distRemaining = this.distRemaining > 0 ? this.distRemaining : 0; // make sure we still have some travelling to do
+            this.velocity = this.currentRoad().avg_vel();
+            this.current_time = current_time;
+            this.t = this.getTime();
+            manager.changeKey(ID, this);
+        }
+    }
+    
+    public Road nextRoad() {
+        if(finished()) return this.route[this.curPos-1];
+        return this.route[this.curPos];
+    }
+    public Road currentRoad() { return this.route[this.curPos-1]; }
+    
+    public void advance(double current_time) {
+        if(curPos < this.route.length) curPos++;
+        if( !finished() ) {
+            this.current_time = current_time;
+            this.distRemaining = this.currentRoad().roadlength;
+            this.velocity = this.currentRoad().avg_vel();
+            this.t = this.getTime();
+            if(manager != null && manager.contains(ID))
                 manager.changeKey(ID, this);
         }
-        this.advance();
     }
-    public void changeRoadCost(double road_cost, double current_time) {
-        double new_arrival_time = this.roadStartT + road_cost;
-        // make sure that our new travel time is in the future and not in the past.
-        this.t = new_arrival_time > current_time ? new_arrival_time : current_time+0.1;
-        if(!finished()) manager.changeKey(ID, this);
-    }
-    
-    public String nextRoad() { 
-        if(finished()) return this.route[this.curPos-1];
-        return this.route[this.curPos]; 
-    }
-    public String currentRoad() { return this.route[this.curPos-1]; }
-    
-    public void advance() { if(curPos < route.length) curPos++; }
     public boolean finished() { 
         boolean finished = curPos >= route.length; // i.e. currentRoad() == "end"
         if(finished && manager.contains(ID)) {
@@ -73,8 +91,8 @@ public class Agent implements Comparable<Agent> {
 
     @Override
     public String toString() {
-        String ret = "At: " + this.t.toString() + ", " + route[curPos];
-        if(curPos+1<route.length) ret += " --> " + route[curPos+1];
+        String ret = "At: " + this.t.toString() + ", " + currentRoad().toString();
+        if(curPos+1<route.length) ret += " --> " + nextRoad().toString();
         return ret;
     }
 }
