@@ -9,17 +9,19 @@ public class EventManager {
     double time;
     HashMap<String, Road> roadmap;
     IndexMinPQ<Agent> eventManager;
+    ArrayList<Agent> agentlist;
     boolean started;
     boolean finished;
 
     public EventManager() {
         roadmap = ConfigReader.initializeRoadNetwork("config/roadnet.csv");
         eventManager = ConfigReader.initializeRoutes("config/routelist.csv", roadmap, 30);
+        agentlist = (ArrayList<Agent>) roadmap.get("start").agentList.clone();
         time = 0;
         started = false;
         finished = false;
     }
-    
+
     public Agent step() {
         started = true;
         if (eventManager.isEmpty()) {
@@ -56,16 +58,30 @@ public class EventManager {
 
     public static void main(String[] args) {
         EventManager em = new EventManager();
-        Agent first = em.eventManager.minKey();
-        int i=0;
-        for(; !em.finished; i++) em.step();
+        int i = 0;
+        String[] roads = {"SO", "OP", "PM", "MN", "ND"};
+        for (; !em.finished; i++) {
+            em.step();
+            double now = ((double) Math.round(em.time * 1000)) / 1000;
+            System.out.println("___" + i + "___"+now);
+            for (String road : roads) {
+                double tt = ((double) Math.round(em.roadmap.get(road).cost() * 1000)) / 1000;
+                System.out.print(road + "("+tt+"): ");
+                for (Agent a : em.roadmap.get(road).agentList) {
+                    double st = ((double) Math.round(a.getRoadStartTime() * 1000)) / 1000;
+                    double t = ((double) Math.round(a.getTime() * 1000.0)) / 1000;
+                    System.out.print("(" + a.ID + ", " + st + ", " + t + ")\t");
+                }
+                System.out.println("");
+            }
+            System.out.println("");
+        }
         double total = 0;
         int n = 0;
-        for(Agent a : em.roadmap.get("end").agentList) {
+        for (Agent a : em.agentlist) {
             total += a.getTotalTime();
             n += 1;
         }
-        
-        System.out.println(i + " iterations. " + n + " agents. " + total/n + " average time.");
+        System.out.println(i + " iterations. " + n + " agents. " + total / n + " average time.");
     }
 }

@@ -47,7 +47,7 @@ public class Agent implements Comparable<Agent> {
     public void changeRoadCost(double road_cost, double current_time) {
         double new_arrival_time = this.roadStartT + road_cost;
         // make sure that our new travel time is in the future and not in the past.
-        this.t = new_arrival_time > current_time ? new_arrival_time : current_time;
+        this.t = new_arrival_time > current_time ? new_arrival_time : current_time+0.1;
         if(!finished()) manager.changeKey(ID, this);
     }
     
